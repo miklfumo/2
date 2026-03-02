@@ -106,6 +106,41 @@ function captcha_validate(string $input): bool {
     return $valid;
 }
 
+
+/**
+ * Verify Yandex SmartCaptcha token (server-side).
+ * Returns true only when Yandex confirms success.
+ */
+function smartcaptcha_validate(string $token, string $secret, string $userIp = ''): bool {
+    if ($token === '' || $secret === '') {
+        return false;
+    }
+
+    $payload = http_build_query([
+        'secret' => $secret,
+        'token' => $token,
+        'ip' => $userIp,
+    ]);
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/x-www-form-urlencoded\r\n"
+                . 'Content-Length: ' . strlen($payload) . "\r\n",
+            'content' => $payload,
+            'timeout' => 6,
+        ],
+    ]);
+
+    $response = @file_get_contents('https://smartcaptcha.yandexcloud.net/validate', false, $context);
+    if ($response === false) {
+        return false;
+    }
+
+    $decoded = json_decode($response, true);
+    return is_array($decoded) && !empty($decoded['status']) && $decoded['status'] === 'ok';
+}
+
 /**
  * Generate CAPTCHA image (PNG) as base64 data URI
  */

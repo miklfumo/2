@@ -25,6 +25,9 @@ $captchaImgSrc = '';
 if (function_exists('imagecreatetruecolor')) {
     $captchaImgSrc = captcha_image($captchaData['question']);
 }
+
+$config = get_conference_config();
+$smartCaptchaSiteKey = $config['smartcaptcha_sitekey'] ?? '';
 ?>
 <section id="registration" class="section section--alt" aria-labelledby="registration-heading">
     <div class="container">
@@ -151,6 +154,20 @@ if (function_exists('imagecreatetruecolor')) {
                 <!-- CAPTCHA -->
                 <div class="captcha-box">
                     <label for="reg-captcha" class="form-label">Проверка <span class="required">*</span></label>
+
+                    <?php if (!empty($smartCaptchaSiteKey)): ?>
+                        <div class="captcha-box__smart" aria-label="Проверка SmartCaptcha">
+                            <div
+                                id="smartcaptcha-container"
+                                class="smart-captcha"
+                                data-sitekey="<?= e($smartCaptchaSiteKey) ?>"
+                                data-hl="ru"
+                                data-callback="onSmartCaptchaSuccess"
+                            ></div>
+                        </div>
+                        <input type="hidden" name="smartcaptcha_token" id="smartcaptcha-token" value="">
+                    <?php endif; ?>
+
                     <?php if ($captchaImgSrc): ?>
                         <img src="<?= $captchaImgSrc ?>" alt="CAPTCHA" class="captcha-box__image" width="200" height="60">
                     <?php else: ?>
@@ -161,6 +178,9 @@ if (function_exists('imagecreatetruecolor')) {
                     <input type="number" id="reg-captcha" name="captcha" required
                         class="form-input" style="width:8rem;margin-top:0.5rem;"
                         placeholder="Ответ">
+                    <?php if (!empty($smartCaptchaSiteKey)): ?>
+                        <p class="captcha-box__hint">Если виджет SmartCaptcha недоступен, решите пример выше.</p>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Consent checkboxes -->
