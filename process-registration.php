@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/includes/security.php';
+require_once __DIR__ . '/includes/functions.php';
 
 // Only accept POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -29,7 +30,18 @@ if (!rate_limit_check('registration', 3, 300)) {
     $errors[] = 'Слишком много попыток. Пожалуйста, подождите 5 минут.';
 }
 
-// 3. CAPTCHA validation
+// 3. CAPTCHA validation: SmartCaptcha (if configured) + math fallback
+$config = get_conference_config();
+$smartCaptchaSecret = $config['smartcaptcha_secret'] ?? '';
+$smartCaptchaToken = trim($_POST['smartcaptcha_token'] ?? '');
+
+if (empty($errors) && $smartCaptchaSecret !== '' && $smartCaptchaToken !== '') {
+    $userIp = $_SERVER['REMOTE_ADDR'] ?? '';
+    if (!smartcaptcha_validate($smartCaptchaToken, $smartCaptchaSecret, $userIp)) {
+        $errors[] = 'Не удалось подтвердить SmartCaptcha. Попробуйте ещё раз.';
+    }
+}
+
 $captcha_input = $_POST['captcha'] ?? '';
 if (empty($errors) && !captcha_validate($captcha_input)) {
     $errors[] = 'Неверный ответ на проверочный вопрос. Попробуйте ещё раз.';

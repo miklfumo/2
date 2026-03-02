@@ -1,4 +1,14 @@
 /**
+ * SmartCaptcha callback (used by Yandex widget script)
+ */
+window.onSmartCaptchaSuccess = function (token) {
+  var tokenInput = document.getElementById('smartcaptcha-token');
+  if (tokenInput) {
+    tokenInput.value = token || '';
+  }
+};
+
+/**
  * Conference Site — Main JavaScript
  * Progressive enhancement: site works without JS, JS adds interactivity
  */
