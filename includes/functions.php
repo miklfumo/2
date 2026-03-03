@@ -22,6 +22,9 @@ function get_conference_config(): array {
         'email_info' => 'info@isedu.ru',
         'email_partners' => 'partners@isedu.ru',
         'email_reg' => 'reg@isedu.ru',
+        // Yandex SmartCaptcha keys can be set via hosting env variables
+        'smartcaptcha_sitekey' => getenv('SMARTCAPTCHA_SITEKEY') ?: '',
+        'smartcaptcha_secret' => getenv('SMARTCAPTCHA_SECRET') ?: '',
     ];
 }
 

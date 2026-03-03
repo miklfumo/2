@@ -11,12 +11,12 @@ $mailIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="n
             <!-- Brand -->
             <div>
                 <a href="#" class="nav__logo" style="display:inline-flex;">
-                    <div class="nav__logo-icon">ФУ<br>МО</div>
-                    <span class="nav__logo-text">ФУМО ВО ИБ</span>
+                    <img src="public/images/logos/Logo.png" alt="Логотип ФУМО ИБ" class="nav__logo-image" width="44" height="44">
+                    <span class="nav__logo-text">ФУМО ИБ</span>
                 </a>
                 <p class="footer__brand-desc">
                     Всероссийская научно-практическая конференция
-                    &laquo;Кадровое обеспечение информационной безопасности Российской Федерации&raquo;
+                    Кадровое обеспечение информационной безопасности Российской Федерации
                 </p>
             </div>
 
