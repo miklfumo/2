@@ -25,6 +25,9 @@ $captchaImgSrc = '';
 if (function_exists('imagecreatetruecolor')) {
     $captchaImgSrc = captcha_image($captchaData['question']);
 }
+
+$config = get_conference_config();
+$smartCaptchaSiteKey = $config['smartcaptcha_sitekey'] ?? '';
 ?>
 <section id="registration" class="section section--alt" aria-labelledby="registration-heading">
     <div class="container">
@@ -69,6 +72,12 @@ if (function_exists('imagecreatetruecolor')) {
                 <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                 <input type="hidden" name="participant_type" id="participant-type-input" value="<?= e($regOld['participant_type'] ?? 'education') ?>">
                 <input type="hidden" name="payment_type" id="payment-type-input" value="<?= e($regOld['payment_type'] ?? 'organization') ?>">
+
+                <input type="hidden" name="form_started_at" value="<?= e((string) time()) ?>">
+                <div class="sr-only" aria-hidden="true">
+                    <label for="reg-company-website">Оставьте это поле пустым</label>
+                    <input type="text" id="reg-company-website" name="company_website" tabindex="-1" autocomplete="off">
+                </div>
 
                 <!-- Client-side error display -->
                 <div class="reg__errors" style="display:none;"></div>
@@ -151,6 +160,20 @@ if (function_exists('imagecreatetruecolor')) {
                 <!-- CAPTCHA -->
                 <div class="captcha-box">
                     <label for="reg-captcha" class="form-label">Проверка <span class="required">*</span></label>
+
+                    <?php if (!empty($smartCaptchaSiteKey)): ?>
+                        <div class="captcha-box__smart" aria-label="Проверка SmartCaptcha">
+                            <div
+                                id="smartcaptcha-container"
+                                class="smart-captcha"
+                                data-sitekey="<?= e($smartCaptchaSiteKey) ?>"
+                                data-hl="ru"
+                                data-callback="onSmartCaptchaSuccess"
+                            ></div>
+                        </div>
+                        <input type="hidden" name="smartcaptcha_token" id="smartcaptcha-token" value="">
+                    <?php endif; ?>
+
                     <?php if ($captchaImgSrc): ?>
                         <img src="<?= $captchaImgSrc ?>" alt="CAPTCHA" class="captcha-box__image" width="200" height="60">
                     <?php else: ?>
@@ -161,6 +184,9 @@ if (function_exists('imagecreatetruecolor')) {
                     <input type="number" id="reg-captcha" name="captcha" required
                         class="form-input" style="width:8rem;margin-top:0.5rem;"
                         placeholder="Ответ">
+                    <?php if (!empty($smartCaptchaSiteKey)): ?>
+                        <p class="captcha-box__hint">Если виджет SmartCaptcha недоступен, решите пример выше.</p>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Consent checkboxes -->
