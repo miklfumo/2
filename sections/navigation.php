@@ -15,8 +15,8 @@ $navLinks = [
 <header class="nav" role="banner">
     <nav class="nav__inner" aria-label="Основная навигация">
         <a href="#" class="nav__logo" aria-label="ФУМО ИБ — Главная">
-            <div class="nav__logo-icon">ФУ<br>МО</div>
-            <span class="nav__logo-text">ФУМО ВО ИБ</span>
+            <img src="public/images/logos/Logo.png" alt="Логотип ФУМО ИБ" class="nav__logo-image" width="44" height="44">
+            <span class="nav__logo-text">ФУМО ИБ</span>
         </a>
 
         <ul class="nav__links">
