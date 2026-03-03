@@ -1,4 +1,14 @@
 /**
+ * SmartCaptcha callback (used by Yandex widget script)
+ */
+window.onSmartCaptchaSuccess = function (token) {
+  var tokenInput = document.getElementById('smartcaptcha-token');
+  if (tokenInput) {
+    tokenInput.value = token || '';
+  }
+};
+
+/**
  * Conference Site — Main JavaScript
  * Progressive enhancement: site works without JS, JS adds interactivity
  */
@@ -69,32 +79,40 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function updateSpeakers() {
-    var visibleCount = getVisibleCount();
-    var total = speakerCards.length;
+    if (!speakersTrack || speakerCards.length === 0) return;
 
-    speakerCards.forEach(function (card, i) {
-      var show = false;
-      for (var j = 0; j < visibleCount; j++) {
-        if (i === (speakerIndex + j) % total) show = true;
-      }
-      card.style.display = show ? '' : 'none';
-    });
+    const visibleCount = getVisibleCount();
+    const total = speakerCards.length;
+    const maxIndex = Math.max(0, total - visibleCount);
+    if (speakerIndex > maxIndex) speakerIndex = maxIndex;
+
+    const gapPx = 24; // matches CSS gap: 1.5rem
+    const containerWidth = speakersTrack.parentElement ? speakersTrack.parentElement.clientWidth : speakersTrack.clientWidth;
+    const cardWidth = Math.max(0, (containerWidth - gapPx * (visibleCount - 1)) / visibleCount);
+
+    speakersTrack.style.setProperty('--speaker-card-width', cardWidth + 'px');
+    speakersTrack.style.transform = 'translateX(' + (-(cardWidth + gapPx) * speakerIndex) + 'px)';
 
     speakerDots.forEach(function (dot, i) {
       dot.classList.toggle('is-active', i === speakerIndex);
+      dot.style.display = i <= maxIndex ? '' : 'none';
     });
   }
 
   if (speakerPrev) {
     speakerPrev.addEventListener('click', function () {
-      speakerIndex = (speakerIndex - 1 + speakerCards.length) % speakerCards.length;
+      const visibleCount = getVisibleCount();
+      const maxIndex = Math.max(0, speakerCards.length - visibleCount);
+      speakerIndex = speakerIndex <= 0 ? maxIndex : speakerIndex - 1;
       updateSpeakers();
     });
   }
 
   if (speakerNext) {
     speakerNext.addEventListener('click', function () {
-      speakerIndex = (speakerIndex + 1) % speakerCards.length;
+      const visibleCount = getVisibleCount();
+      const maxIndex = Math.max(0, speakerCards.length - visibleCount);
+      speakerIndex = speakerIndex >= maxIndex ? 0 : speakerIndex + 1;
       updateSpeakers();
     });
   }

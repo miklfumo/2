@@ -18,7 +18,7 @@ function set_security_headers(): void {
     header("Referrer-Policy: strict-origin-when-cross-origin");
     header("Permissions-Policy: camera=(), microphone=(), geolocation=()");
     // CSP: allow self, Yandex Maps, inline styles/scripts needed for map
-    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://api-maps.yandex.ru https://yandex.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.yandex.ru https://*.yandex.net; frame-src https://yandex.ru https://*.yandex.ru;");
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://api-maps.yandex.ru https://yandex.ru https://smartcaptcha.yandexcloud.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.yandex.ru https://*.yandex.net https://smartcaptcha.yandexcloud.net; frame-src https://yandex.ru https://*.yandex.ru https://smartcaptcha.yandexcloud.net; connect-src 'self' https://smartcaptcha.yandexcloud.net;");
 }
 
 /**
@@ -106,6 +106,41 @@ function captcha_validate(string $input): bool {
     return $valid;
 }
 
+
+/**
+ * Verify Yandex SmartCaptcha token (server-side).
+ * Returns true only when Yandex confirms success.
+ */
+function smartcaptcha_validate(string $token, string $secret, string $userIp = ''): bool {
+    if ($token === '' || $secret === '') {
+        return false;
+    }
+
+    $payload = http_build_query([
+        'secret' => $secret,
+        'token' => $token,
+        'ip' => $userIp,
+    ]);
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/x-www-form-urlencoded\r\n"
+                . 'Content-Length: ' . strlen($payload) . "\r\n",
+            'content' => $payload,
+            'timeout' => 6,
+        ],
+    ]);
+
+    $response = @file_get_contents('https://smartcaptcha.yandexcloud.net/validate', false, $context);
+    if ($response === false) {
+        return false;
+    }
+
+    $decoded = json_decode($response, true);
+    return is_array($decoded) && !empty($decoded['status']) && $decoded['status'] === 'ok';
+}
+
 /**
  * Generate CAPTCHA image (PNG) as base64 data URI
  */
@@ -174,6 +209,58 @@ function rate_limit_check(string $action = 'form', int $limit = 3, int $window =
     }
 
     $_SESSION[$key][] = $now;
+    return true;
+}
+
+
+/**
+ * IP-based rate limiter for basic anti-DDoS protection on forms.
+ * Stores counters in a temp file with flock to work on shared hosting.
+ */
+function ip_rate_limit_check(string $action, string $ip, int $limit, int $window): bool {
+    $safeAction = preg_replace('/[^a-z0-9_\-]/i', '_', $action);
+    $safeIp = preg_replace('/[^a-z0-9_:\.\-]/i', '_', $ip ?: 'unknown');
+    $file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "rate_{$safeAction}_{$safeIp}.json";
+
+    $now = time();
+    $entries = [];
+
+    $fp = fopen($file, 'c+');
+    if ($fp === false) {
+        // Fail-open to avoid blocking legitimate users when FS is unavailable
+        return true;
+    }
+
+    try {
+        if (!flock($fp, LOCK_EX)) {
+            fclose($fp);
+            return true;
+        }
+
+        $raw = stream_get_contents($fp);
+        if ($raw !== false && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $entries = array_values(array_filter($decoded, fn($t) => is_int($t) && ($now - $t) < $window));
+            }
+        }
+
+        if (count($entries) >= $limit) {
+            flock($fp, LOCK_UN);
+            fclose($fp);
+            return false;
+        }
+
+        $entries[] = $now;
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, json_encode($entries));
+        fflush($fp);
+        flock($fp, LOCK_UN);
+    } finally {
+        fclose($fp);
+    }
+
     return true;
 }
 

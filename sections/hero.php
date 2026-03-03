@@ -17,7 +17,7 @@ $config = get_conference_config();
         <p class="hero__label"><?= e($config['title']) ?></p>
 
         <h1 class="hero__title text-balance">
-            &laquo;<?= e($config['name']) ?>&raquo;
+            <span><?= e($config['name']) ?></span>
         </h1>
 
         <p class="hero__subtitle"><?= e($config['subtitle']) ?></p>
@@ -43,8 +43,8 @@ $config = get_conference_config();
 
         <div class="hero__stats">
             <div class="text-center">
-                <p class="hero__stat-number">30</p>
-                <p class="hero__stat-label">Юбилейный пленум</p>
+                <p class="hero__stat-number">150+</p>
+                <p class="hero__stat-label">Образовательных организаций</p>
             </div>
             <div class="text-center">
                 <p class="hero__stat-number">50+</p>

@@ -30,4 +30,4 @@ set_security_headers();
     <?php require __DIR__ . '/sections/venue.php'; ?>
 </main>
 <?php require __DIR__ . '/sections/footer.php'; ?>
-<?php require __DIR__ . '/includes/footer-html.php'; ?>
+<?php require __DIR__ . '/includes/footer.php'; ?>
