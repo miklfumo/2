@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/includes/security.php';
+require_once __DIR__ . '/includes/functions.php';
 
 // Only accept POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -18,6 +19,23 @@ set_security_headers();
 $errors = [];
 $success = false;
 
+// 0. Basic anti-bot / anti-DDoS checks
+$clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
+if (!ip_rate_limit_check('registration_ip', $clientIp, 12, 60)) {
+    http_response_code(429);
+    $errors[] = 'Слишком много запросов с вашего IP. Повторите попытку через минуту.';
+}
+
+$honeypot = trim($_POST['company_website'] ?? '');
+if ($honeypot !== '') {
+    $errors[] = 'Обнаружена подозрительная активность. Попробуйте отправить форму ещё раз.';
+}
+
+$formStartedAt = (int)($_POST['form_started_at'] ?? 0);
+if ($formStartedAt > 0 && (time() - $formStartedAt) < 3) {
+    $errors[] = 'Форма отправлена слишком быстро. Пожалуйста, проверьте данные и повторите.';
+}
+
 // 1. CSRF validation
 $csrf = $_POST['csrf_token'] ?? '';
 if (!csrf_validate($csrf)) {
@@ -29,7 +47,18 @@ if (!rate_limit_check('registration', 3, 300)) {
     $errors[] = 'Слишком много попыток. Пожалуйста, подождите 5 минут.';
 }
 
-// 3. CAPTCHA validation
+// 3. CAPTCHA validation: SmartCaptcha (if configured) + math fallback
+$config = get_conference_config();
+$smartCaptchaSecret = $config['smartcaptcha_secret'] ?? '';
+$smartCaptchaToken = trim($_POST['smartcaptcha_token'] ?? '');
+
+if (empty($errors) && $smartCaptchaSecret !== '' && $smartCaptchaToken !== '') {
+    $userIp = $_SERVER['REMOTE_ADDR'] ?? '';
+    if (!smartcaptcha_validate($smartCaptchaToken, $smartCaptchaSecret, $userIp)) {
+        $errors[] = 'Не удалось подтвердить SmartCaptcha. Попробуйте ещё раз.';
+    }
+}
+
 $captcha_input = $_POST['captcha'] ?? '';
 if (empty($errors) && !captcha_validate($captcha_input)) {
     $errors[] = 'Неверный ответ на проверочный вопрос. Попробуйте ещё раз.';
